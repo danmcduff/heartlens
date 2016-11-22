@@ -106,3 +106,4 @@ C:\Users\damcduff\Documents\Research\heartlens\HeartLens\obj\Debug\HeartLens.Pro
 C:\Users\damcduff\Documents\Research\heartlens\HeartLens\obj\Debug\HeartLens.csproj.GenerateResource.Cache
 C:\Users\damcduff\Documents\Research\heartlens\HeartLens\obj\Debug\HeartLens.exe
 C:\Users\damcduff\Documents\Research\heartlens\HeartLens\obj\Debug\HeartLens.pdb
+D:\Christophe Hurter\Repository Git Hub\HoloHeart\heartlens\HeartLens\obj\Debug\HeartLens.csprojResolveAssemblyReference.cache

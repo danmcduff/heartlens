@@ -129,10 +129,15 @@ namespace HeartLens
                 //code to update UI
                 textBoxHeartRate.Text = hr.ToString();
 
+                this.chart1.Series[0].Points.Clear();
+                this.chart1.Series[1].Points.Clear();
+                this.chart1.Series[2].Points.Clear();
+
                 for (int i = 0; i < red.Length; i++)
                 {
                     this.chart1.Series[0].Points.Add(red[i]);
-                    this.chart2.Series[0].Points.Add(green[i]);
+                    this.chart1.Series[1].Points.Add(green[i]);
+                    this.chart1.Series[2].Points.Add(blue[i]);
                 }
             });
 
@@ -238,7 +243,8 @@ namespace HeartLens
         private double HeartComputation(Bitmap image)
         {
 
-            ComputeAndStorAverageRGB(image);
+           // ComputeAndStorAverageRGB(image);
+            ComputeAndStorAverageRGB_Safe(image);
 
             if (isDataReady)
             {
