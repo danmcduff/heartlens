@@ -128,7 +128,15 @@ namespace HeartLens
             {
                 //code to update UI
                 textBoxHeartRate.Text = hr.ToString();
+
+                for (int i = 0; i < red.Length; i++)
+                {
+                    this.chart1.Series[0].Points.Add(red[i]);
+                    this.chart2.Series[0].Points.Add(green[i]);
+                }
             });
+
+
 
         }
 
@@ -148,6 +156,7 @@ namespace HeartLens
             DeviceComboBox.SelectedIndex = 0;
             buttonOk_Click(this, null);
 
+            
         }
 
      
@@ -171,6 +180,10 @@ namespace HeartLens
             pictureBoxObservedImage.Dock = DockStyle.Fill;
 
             this.groupBoxVideo.Controls.Add(pictureBoxObservedImage);
+
+            this.chart1.Titles.Add("Pets");
+
+
         }
 
         private void InitData()
@@ -186,6 +199,7 @@ namespace HeartLens
         double[] red;
         double[] green;
         double[] blue;
+
 
         int FramePointer = 0;
 
@@ -219,18 +233,18 @@ namespace HeartLens
         }
 
 
+
+        // THE MAIN CARDIO COMPUTATION:
         private double HeartComputation(Bitmap image)
         {
-
-            //ToDO turn  to 0
-
 
             ComputeAndStorAverageRGB(image);
 
             if (isDataReady)
             {
-                //More than timeWindows records
 
+                ////////////////////////////////
+                // NORMALIZE THE RGB SIGNALS BY SUBTRACTING THE MEAN:
                 double[] redN = new double[red.Length];
                 double[] greenN = new double[green.Length];
                 double[] blueN = new double[blue.Length];
@@ -248,7 +262,18 @@ namespace HeartLens
                     greenN[i] = green[i] - meanG;
                     blueN[i] = blue[i] - meanB;
                 }
+                ///////////////////////////////////
 
+
+
+                ///////////////////////////////////
+                // ADD A HIGH PASS FILTERING STEP:
+                //alpha
+
+                ///////////////////////////////////
+
+                ///////////////////////////////////
+                // PERFORM ICA:
                 var ica = new IndependentComponentAnalysis()
                 {
                     Algorithm = IndependentComponentAlgorithm.Parallel,
@@ -267,7 +292,16 @@ namespace HeartLens
                 MultivariateLinearRegression demix = ica.Learn(colors);
                 double[][] result = demix.Transform(colors);
 
-                //FFT of eah rows
+                ///////////////////////////////////
+
+                ///////////////////////////////////
+                // ADD A BANDPASS FILTERING STEP:
+
+                ///////////////////////////////////
+
+
+                ///////////////////////////////////
+                // CALCULATE THE FFT OF ECH CHANNEL:
                 double[] imagR = new double[length];
                 double[] imagG = new double[length];
                 double[] imagB = new double[length];
@@ -280,10 +314,11 @@ namespace HeartLens
                 double[] magR = GetMag(result[0], imagR);
                 double[] magG = GetMag(result[1], imagG);
                 double[] magB = GetMag(result[2], imagB);
+                ///////////////////////////////////
 
 
-                //getting freauency range
-
+                ///////////////////////////////////
+                // FIND THE MAX FREQUENCY AND POWER FROM THE FFTs:
                 double[] freq = Vector.Interval((double)0, (double)(timeWindows - 1));
                 for (int i = 0; i < freq.Length; i++)
                 {
@@ -322,6 +357,7 @@ namespace HeartLens
                     //Blue is the Max
                     HeartBeatFrequency = freq[MaxBlueIndex];
                 }
+                ///////////////////////////////////
 
                 return HeartBeatFrequency;
             }
@@ -486,5 +522,6 @@ namespace HeartLens
         {
 
         }
+
     }
 }
