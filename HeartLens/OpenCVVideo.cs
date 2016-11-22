@@ -8,21 +8,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 
-
-
 using DirectShowLib;
 using Emgu.CV.Util;
-
 
 
 namespace HeartLens
 {
     internal class OpenCVVideo
     {
+        internal int FPS = 0;
+
+
+        int CameraDevice = 0; //Variable to track camera device selected
+        Capture CaptureEnvironementCamera = null;
 
         internal struct Video_Device
         {
@@ -56,29 +57,18 @@ namespace HeartLens
         internal Video_Device[] InitCameraList()
         {
             Video_Device[] WebCams; //List containing all the camera available
-
-
-            //-> Find systems cameras with DirectShow.Net dll
-            //thanks to carles lloret
+      
             DsDevice[] _SystemCamereas = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
             WebCams = new Video_Device[_SystemCamereas.Length];
             for (int i = 0; i < _SystemCamereas.Length; i++)
             {
                 WebCams[i] = new Video_Device(i, _SystemCamereas[i].Name, _SystemCamereas[i].ClassID); //fill web cam array
                                                                                                        //         comboBoxCamera.Items.Add(WebCams[i].ToString());
-            }
-            //if (comboBoxCamera.Items.Count > 0)
-            //{
-            //    comboBoxCamera.SelectedIndex = 0; //Set the selected device the default
-            //                                      //  captureButton.Enabled = true; //Enable the start
-            //}
+            }          
 
             return WebCams;
         }
 
-
-        int CameraDevice = 0; //Variable to track camera device selected
-        Capture CaptureEnvironementCamera = null;
 
         /// <summary>
         /// Sets up the _capture variable with the selected camera index
@@ -110,8 +100,7 @@ namespace HeartLens
             }
         }
 
-        internal int FPS = 0;
-
+      
         /// <summary>
         /// Capture an image from the camera and process it
         /// </summary>
@@ -122,16 +111,14 @@ namespace HeartLens
             //Get the image and turn it into B&W
             Mat frame = new Mat();
             CaptureEnvironementCamera.Retrieve(frame, 0);
+
             // Mat grayFrame = new Mat();
             //  CvInvoke.CvtColor(frame, grayFrame, ColorConversion.Bgr2Gray);
-          //  Form1.MyApp.pictureBoxObservedImage.Image = frame;
-
+       
             Form1.MyApp.ProcessImage(frame);
 
-            FPS++;            
-
-          //  DelayAddImage(frame);
-        }
+            FPS++; 
+         }
 
 
     }

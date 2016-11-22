@@ -70,6 +70,11 @@ namespace HeartLens
 
         #endregion
 
+        internal Emgu.CV.UI.ImageBox pictureBoxObservedImage;
+
+        OpenCVVideo MyOpenCVVideo;
+        FaceDetection MyFaceDetection;
+
 
         public Form1()
         {
@@ -77,8 +82,6 @@ namespace HeartLens
             Form1.MyApp = this;
 
             InitializeComponent();
-
-
         }
 
 
@@ -94,122 +97,12 @@ namespace HeartLens
         }
 
 
-
-        //Open a video source
-        //private void OpenVideoSource()
-        //{
-        //    try
-        //    {
-        //        videoCaptureDevice = new VideoCaptureDevice(device);
-        //        videoCaptureDevice.NewFrame += new AForge.Video.NewFrameEventHandler(getFrame);
-        //        videoCaptureDevice.Start();
-        //    }
-        //    catch (Exception exception)
-        //    {
-        //        MessageBox.Show(exception.ToString());
-        //    }
-        //}
-
-
         public Bitmap getImage
         {
             get;
             set;
         }
-
-        //getFrame from the videosource
-        private void getFrame(object sender, AForge.Video.NewFrameEventArgs eventArgs)
-        {
-
-            if (CurrentImage == null)
-            {
-                //Insert image into Picuture Box
-                CurrentImage = (Bitmap)eventArgs.Frame.Clone();
-            }
-
-            //Copy the image to the currentImage
-            Graphics g = Graphics.FromImage(CurrentImage);
-            g.DrawImage(eventArgs.Frame, new PointF(0, 0));
-            g.Dispose();
-
-            //  pictureBoxVideo.Image = CurrentImage;
-
-
-            processFrame(CurrentImage);
-
-            nbrImage++;
-        }//Enf of getFrame
-
-
-        Bitmap ProcessedImage;
-
-        private void processFrame(Bitmap sourceImage)
-        {
-            if (ProcessedImage == null)
-            {
-                //Insert image into Picuture Box
-                ProcessedImage = (Bitmap)sourceImage.Clone();
-            }
-            else
-            {
-                //Copy the image to the currentImage
-                Graphics g = Graphics.FromImage(ProcessedImage);
-                g.DrawImage(sourceImage, new PointF(0, 0));
-                g.Dispose();
-
-
-                //This ration helps to get the correct framre Rate
-                int ration = 6;
-
-                //Resize an Image
-                ResizeBicubic resize = new ResizeBicubic(ProcessedImage.Width / ration, ProcessedImage.Height / ration);
-                Bitmap bresize = resize.Apply(ProcessedImage);
-                //Convert the Image into grayscale Image
-                grayImage = Grayscale.CommonAlgorithms.BT709.Apply(bresize);
-
-                Rectangle[] rect = null;
-
-                try
-                {
-                    rect = haarObjectDetector.ProcessFrame(grayImage);
-                }
-                catch (Exception)
-                {
-
-
-                }
-
-
-                //40 is the only way I found to reduice the wrong face detection with too small size
-                //   if ((rect != null) && (rect.Length != 0) && (rect[0].Width > (40)))
-                if ((rect != null) && (rect.Length != 0))
-                //   if ((rect != null) && (rect.Length != 0) && (rect[0].Width > (40)))
-                {
-                    Rectangle rectangle = rect[0];
-                    int x = rectangle.X * ration;
-                    int y = rectangle.Y * ration;
-                    int width = rectangle.Width * ration;
-                    int height = rectangle.Height * ration;
-                    Rectangle rec = new Rectangle(x, y, width, height);
-                    Bitmap bmp = cropAtRect(sourceImage, rec);
-
-
-                    double hr = 0;
-                    hr = HeartComputation(bmp);
-
-
-                    this.BeginInvoke((Action)delegate ()
-                    {
-                        //code to update UI
-                        textBoxHeartRate.Text = hr.ToString();
-                        pictureBoxFace.Image = bmp;
-                    });
-
-
-
-                }
-            }
-        }
+        
 
 
         Rectangle LastRectangle = new Rectangle(0,0,20,20);
@@ -225,76 +118,39 @@ namespace HeartLens
             Mat image = new Mat(frame, LastRectangle);
 
             pictureBoxObservedImage.Image = image;
-
-          //  processFrame(image.Bitmap);
-
+    
 
             double hr = 0;
             hr = HeartComputation(image.Bitmap);
 
-
+            //Safe threading process
             this.BeginInvoke((Action)delegate ()
             {
                 //code to update UI
                 textBoxHeartRate.Text = hr.ToString();
             });
 
-
-
-            //foreach (Rectangle face in faces)
-            //    CvInvoke.Rectangle(frame, face, new Bgr(Color.Red).MCvScalar, 2);
-
-            //  pictureBoxObservedImage.Image = frame;
-
-            //Get the face and processit
-            //     
-
-
         }
 
 
-        public Bitmap cropAtRect(Bitmap b, Rectangle r)
-        {
-            Bitmap nb = new Bitmap(r.Width, r.Height);
-            Graphics g = Graphics.FromImage(nb);
-            g.DrawImage(b, -r.X, -r.Y);
-            return nb;
-        }
-
-        private void InitFacaeDetection()
-        {
-            HaarCascade cascade = new FaceHaarCascade();
-            haarObjectDetector = new HaarObjectDetector(cascade,
-                50, ObjectDetectorSearchMode.Single, 2.2f,
-                ObjectDetectorScalingMode.GreaterToSmaller);
-        }
-
-        OpenCVVideo MyOpenCVVideo;
-        FaceDetection MyFaceDetection;
 
         private void Form1_Load(object sender, EventArgs e)
         {
             InitData();
-             // LoadDevice();
-
+           
             FrameRate = 15;// (double)timeWindows / (double)(timerFrameUpdate.Interval) * 1000.0;
-
-         //   InitFacaeDetection();
-
-         
-
-
+  
             InitOpenCV();
 
             MyFaceDetection = new FaceDetection();
 
-
+            //Debug, automatic device selection and start
             DeviceComboBox.SelectedIndex = 0;
             buttonOk_Click(this, null);
+
         }
 
-        internal Emgu.CV.UI.ImageBox pictureBoxObservedImage;
-
+     
         private void InitOpenCV()
         {
             MyOpenCVVideo = new OpenCVVideo();
@@ -325,8 +181,7 @@ namespace HeartLens
 
             blue = Matrix.Vector(timeWindows, 1, 1.0f);
         }
-
-
+        
 
         double[] red;
         double[] green;
@@ -494,11 +349,8 @@ namespace HeartLens
             maxFreqIndex = maxIndex;
             maxColorValue = max;
         }
-
-
-
-
-
+        
+        
 
 
         /// <summary>
@@ -514,8 +366,6 @@ namespace HeartLens
             int r = 0;
             int g = 0;
             int b = 0;
-
-
 
             BitmapData bmd = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height),
                                   System.Drawing.Imaging.ImageLockMode.ReadWrite,
@@ -564,9 +414,7 @@ namespace HeartLens
             }
         }
 
-
-
-
+        
 
         private void ComputeAndStorAverageRGB_Safe(Bitmap image)
         {
@@ -610,14 +458,17 @@ namespace HeartLens
         }
 
 
-        int nbrImage = 0;
+
+        DateTime LastFpsComputation = DateTime.Now;
 
         private void timerFrameUpdate_Tick(object sender, EventArgs e)
         {
-
             //Update the frame Rate
+            TimeSpan timeBetzeenTwoFpsComputation = DateTime.Now - LastFpsComputation;
 
-            FrameRate = MyOpenCVVideo.FPS;
+            LastFpsComputation = DateTime.Now;
+
+            FrameRate = MyOpenCVVideo.FPS / timeBetzeenTwoFpsComputation.TotalSeconds; 
 
 
             this.Text = "Nbr Images per seconds : " + FrameRate;
@@ -627,8 +478,7 @@ namespace HeartLens
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-           // videoCaptureDevice.Stop();
-            MyOpenCVVideo.StopCamera();
+             MyOpenCVVideo.StopCamera();
             MyFaceDetection.Dispose();
         }
 
