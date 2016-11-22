@@ -128,7 +128,15 @@ namespace HeartLens
             {
                 //code to update UI
                 textBoxHeartRate.Text = hr.ToString();
+
+                for (int i = 0; i < red.Length; i++)
+                {
+                    this.chart1.Series[0].Points.Add(red[i]);
+                    this.chart2.Series[0].Points.Add(green[i]);
+                }
             });
+
+
 
         }
 
@@ -148,6 +156,7 @@ namespace HeartLens
             DeviceComboBox.SelectedIndex = 0;
             buttonOk_Click(this, null);
 
+            
         }
 
      
@@ -171,6 +180,10 @@ namespace HeartLens
             pictureBoxObservedImage.Dock = DockStyle.Fill;
 
             this.groupBoxVideo.Controls.Add(pictureBoxObservedImage);
+
+            this.chart1.Titles.Add("Pets");
+
+
         }
 
         private void InitData()
@@ -186,6 +199,7 @@ namespace HeartLens
         double[] red;
         double[] green;
         double[] blue;
+
 
         int FramePointer = 0;
 
@@ -228,7 +242,7 @@ namespace HeartLens
 
             if (isDataReady)
             {
-                
+
                 ////////////////////////////////
                 // NORMALIZE THE RGB SIGNALS BY SUBTRACTING THE MEAN:
                 double[] redN = new double[red.Length];
@@ -250,8 +264,11 @@ namespace HeartLens
                 }
                 ///////////////////////////////////
 
+
+
                 ///////////////////////////////////
                 // ADD A HIGH PASS FILTERING STEP:
+                //alpha
 
                 ///////////////////////////////////
 
@@ -274,6 +291,7 @@ namespace HeartLens
 
                 MultivariateLinearRegression demix = ica.Learn(colors);
                 double[][] result = demix.Transform(colors);
+
                 ///////////////////////////////////
 
                 ///////////////////////////////////
@@ -504,5 +522,6 @@ namespace HeartLens
         {
 
         }
+
     }
 }
