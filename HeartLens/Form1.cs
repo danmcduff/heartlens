@@ -40,7 +40,7 @@ namespace HeartLens
 
 
         double FrameRate = 0;
-        int timeWindows = 15;
+        int timeWindows = 300;
 
         Bitmap CurrentImage;
 
@@ -133,11 +133,11 @@ namespace HeartLens
                 this.chart1.Series[1].Points.Clear();
                 this.chart1.Series[2].Points.Clear();
 
-                for (int i = 0; i < red.Length; i++)
+                for (int i = 0; i < red_norm.Length; i++)
                 {
-                    this.chart1.Series[0].Points.Add(red[i]);
-                    this.chart1.Series[1].Points.Add(green[i]);
-                    this.chart1.Series[2].Points.Add(blue[i]);
+                    this.chart1.Series[0].Points.Add(red_norm[i]);
+                    this.chart1.Series[1].Points.Add(green_norm[i]);
+                    this.chart1.Series[2].Points.Add(blue_norm[i]);
                 }
             });
 
@@ -198,6 +198,12 @@ namespace HeartLens
             green = Matrix.Vector(timeWindows, 1, 1.0f);
 
             blue = Matrix.Vector(timeWindows, 1, 1.0f);
+
+            red_norm = Matrix.Vector(timeWindows, 1, 1.0f);
+            
+            green_norm = Matrix.Vector(timeWindows, 1, 1.0f);
+
+            blue_norm = Matrix.Vector(timeWindows, 1, 1.0f);
         }
         
 
@@ -205,6 +211,9 @@ namespace HeartLens
         double[] green;
         double[] blue;
 
+        double[] red_norm;
+        double[] green_norm;
+        double[] blue_norm;
 
         int FramePointer = 0;
 
@@ -268,6 +277,7 @@ namespace HeartLens
                     greenN[i] = green[i] - meanG;
                     blueN[i] = blue[i] - meanB;
                 }
+
                 ///////////////////////////////////
 
 
@@ -311,6 +321,10 @@ namespace HeartLens
                 double[] imagR = new double[length];
                 double[] imagG = new double[length];
                 double[] imagB = new double[length];
+
+                red_norm = result[0];
+                green_norm = result[1];
+                blue_norm = result[2];
 
                 Accord.Math.Transforms.FourierTransform2.FFT(result[0], imagR, FourierTransform.Direction.Forward);
                 Accord.Math.Transforms.FourierTransform2.FFT(result[1], imagG, FourierTransform.Direction.Forward);
