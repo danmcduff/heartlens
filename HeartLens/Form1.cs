@@ -223,9 +223,9 @@ namespace HeartLens
             green_norm = Matrix.Vector(timeWindows, 1, 1.0f);
             blue_norm = Matrix.Vector(timeWindows, 1, 1.0f);
 
-            red_norm_FFT = Matrix.Vector(timeWindows, 1, 1.0f);
-            green_norm_FFT = Matrix.Vector(timeWindows, 1, 1.0f);
-            blue_norm_FFT = Matrix.Vector(timeWindows, 1, 1.0f);
+            red_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
+            green_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
+            blue_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
         }
         
 
@@ -286,6 +286,19 @@ namespace HeartLens
 
                 ////////////////////////////////
                 // NORMALIZE THE RGB SIGNALS BY SUBTRACTING THE MEAN:
+                //build color matrix
+                double[][] colors =
+                {
+                    red,
+                    green,
+                    blue
+                };
+
+                double[][] norm_colors;
+                norm_colors = Accord.Statistics.Tools.ZScores(colors);
+                ///////////////////////////////////
+
+                /*
                 double[] redN = new double[red.Length];
                 double[] greenN = new double[green.Length];
                 double[] blueN = new double[blue.Length];
@@ -295,7 +308,6 @@ namespace HeartLens
                 double meanR = GetMean(red);
                 double meanG = GetMean(green);
                 double meanB = GetMean(blue);
-
                 int length = red.Length;
                 for (int i = 0; i < length; i++)
                 {
@@ -303,14 +315,32 @@ namespace HeartLens
                     greenN[i] = green[i] - meanG;
                     blueN[i] = blue[i] - meanB;
                 }
-
-                ///////////////////////////////////
+                */
 
 
 
                 ///////////////////////////////////
                 // ADD A HIGH PASS FILTERING STEP:
-                //alpha
+                /*
+                var testFilter = new Accord.Audio.Filters.HighPassFilter(0.1f);
+                float RC = 1 / (2 * (float)(3.142) * (float)(0.7));
+                float dt = 1 / (float)(30);
+                float ALPHA = dt / (dt + RC);
+                testFilter.Alpha = ALPHA;
+
+                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(norm_colors[0], sampleRate: 30);
+                Accord.Audio.Signal target_out = testFilter.Apply(target);
+                target_out.CopyTo(norm_colors[0]);
+
+                target = Accord.Audio.Signal.FromArray(norm_colors[1], sampleRate: 30);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(norm_colors[1]);
+
+                target = Accord.Audio.Signal.FromArray(norm_colors[2], sampleRate: 30);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(norm_colors[2]);
+                */
+                //byte[] test = target_out.RawData;
 
                 ///////////////////////////////////
 
@@ -321,36 +351,21 @@ namespace HeartLens
                     Algorithm = IndependentComponentAlgorithm.Parallel,
                     Contrast = new Logcosh()
                 };
-
-
-                //build color matrix
-                double[][] colors =
-                {
-                    redN,
-                    greenN,
-                    blueN
-                };
-
-                MultivariateLinearRegression demix = ica.Learn(colors);
-                double[][] result = demix.Transform(colors);
+                MultivariateLinearRegression demix = ica.Learn(norm_colors);
+                double[][] result = demix.Transform(norm_colors);
 
                 ///////////////////////////////////
 
                 ///////////////////////////////////
                 // ADD A BANDPASS FILTERING STEP:
-                var testFilter = new Accord.Audio.Filters.HighPassFilter(0.1f);
-                float RC = 1 / (2 * (float)(3.142) * (float)(0.7));
-                float dt = 1 / (float)(30);
-                float ALPHA = dt / (dt + RC);
-                testFilter.Alpha = ALPHA;
-                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(colors[0], sampleRate: 30);
-                Accord.Audio.Signal target_out = testFilter.Apply(target);
+
 
                 ///////////////////////////////////
 
 
                 ///////////////////////////////////
                 // CALCULATE THE FFT OF ECH CHANNEL:
+                int length = red.Length;
                 double[] imagR = new double[length];
                 double[] imagG = new double[length];
                 double[] imagB = new double[length];
@@ -368,9 +383,12 @@ namespace HeartLens
                 double[] magG = GetMag(result[1], imagG);
                 double[] magB = GetMag(result[2], imagB);
 
-                red_norm_FFT = magR;
-                green_norm_FFT = magG;
-                blue_norm_FFT = magB;
+                for (int i = 0; i < timeWindows / 2; i++)
+                {
+                    red_norm_FFT[i] = magR[i];
+                    green_norm_FFT[i] = magG[i];
+                    blue_norm_FFT[i] = magB[i];
+                }
                 ///////////////////////////////////
 
 
@@ -444,12 +462,10 @@ namespace HeartLens
         }
 
 
-
-
-       /// <summary>
-       /// Unsafe mode
-       /// </summary>
-       /// <param name="image"></param>   
+        /// <summary>
+        /// Unsafe mode
+        /// </summary>
+        /// <param name="image"></param>   
         private void ComputeAndStorAverageRGB(Bitmap processedBitmap)
         {
             int r = 0;
