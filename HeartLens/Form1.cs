@@ -40,7 +40,7 @@ namespace HeartLens
 
 
         double FrameRate = 0;
-        int timeWindows = 300;
+        int timeWindows = 600;
 
         Bitmap CurrentImage;
 
@@ -149,6 +149,17 @@ namespace HeartLens
                     this.chart1.Series[2].Points.Add(blue_norm[i]);
                 }
 
+                this.chart3.Series[0].Points.Clear();
+                this.chart3.Series[1].Points.Clear();
+                this.chart3.Series[2].Points.Clear();
+
+                for (int i = 0; i < ica_source_1.Length; i++)
+                {
+                    this.chart3.Series[0].Points.Add(ica_source_1[i]);
+                    this.chart3.Series[1].Points.Add(ica_source_2[i]);
+                    this.chart3.Series[2].Points.Add(ica_source_3[i]);
+                }
+
                 this.chart2.Series[0].Points.Clear();
                 this.chart2.Series[1].Points.Clear();
                 this.chart2.Series[2].Points.Clear();
@@ -223,6 +234,10 @@ namespace HeartLens
             green_norm = Matrix.Vector(timeWindows, 1, 1.0f);
             blue_norm = Matrix.Vector(timeWindows, 1, 1.0f);
 
+            ica_source_1 = Matrix.Vector(timeWindows, 1, 1.0f);
+            ica_source_2 = Matrix.Vector(timeWindows, 1, 1.0f);
+            ica_source_3 = Matrix.Vector(timeWindows, 1, 1.0f);
+
             red_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
             green_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
             blue_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
@@ -236,6 +251,10 @@ namespace HeartLens
         double[] red_norm;
         double[] green_norm;
         double[] blue_norm;
+
+        double[] ica_source_1;
+        double[] ica_source_2;
+        double[] ica_source_3;
 
         double[] red_norm_FFT;
         double[] green_norm_FFT;
@@ -301,29 +320,6 @@ namespace HeartLens
                 norm_colors = norm_colorsT.Transpose();
 
                 ///////////////////////////////////
-
-                /*
-                double[] redN = new double[red.Length];
-                double[] greenN = new double[green.Length];
-                double[] blueN = new double[blue.Length];
-
-                //substract the average the the color channel
-
-                double meanR = GetMean(red);
-                double meanG = GetMean(green);
-                double meanB = GetMean(blue);
-                int length = red.Length;
-                for (int i = 0; i < length; i++)
-                {
-                    redN[i] = red[i] - meanR;
-                    greenN[i] = green[i] - meanG;
-                    blueN[i] = blue[i] - meanB;
-                }
-                */
-
-
-
-                ///////////////////////////////////
                 // ADD A HIGH PASS FILTERING STEP:
                 /*
                 var testFilter = new Accord.Audio.Filters.HighPassFilter(0.1f);
@@ -377,6 +373,10 @@ namespace HeartLens
                 red_norm = norm_colors[0];
                 green_norm = norm_colors[1];
                 blue_norm = norm_colors[2];
+
+                ica_source_1 = result[0];
+                ica_source_2 = result[1];
+                ica_source_3 = result[2];
 
                 Accord.Math.Transforms.FourierTransform2.FFT(result[0], imagR, FourierTransform.Direction.Forward);
                 Accord.Math.Transforms.FourierTransform2.FFT(result[1], imagG, FourierTransform.Direction.Forward);
