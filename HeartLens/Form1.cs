@@ -40,7 +40,7 @@ namespace HeartLens
 
 
         double FrameRate = 0;
-        int timeWindows = 600;
+        int timeWindows = 300;
 
         Bitmap CurrentImage;
 
@@ -349,10 +349,16 @@ namespace HeartLens
                 var ica = new IndependentComponentAnalysis()
                 {
                     Algorithm = IndependentComponentAlgorithm.Parallel,
-                    Contrast = new Logcosh()
+                    Contrast = new Logcosh(),
+                    Iterations = 1000,
+                    NumberOfInputs = 3,
+                    NumberOfOutputs = 3
                 };
-                MultivariateLinearRegression demix = ica.Learn(norm_colors);
-                double[][] result = demix.Transform(norm_colors);
+                ica.Iterations = 1000000;
+
+                MultivariateLinearRegression demix = ica.Learn(norm_colorsT);
+                double[][] resultT = demix.Transform(norm_colorsT);
+                double[][] result = resultT.Transpose();
 
                 ///////////////////////////////////
 
