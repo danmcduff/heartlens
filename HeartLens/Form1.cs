@@ -241,6 +241,8 @@ namespace HeartLens
             red_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
             green_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
             blue_norm_FFT = Matrix.Vector(timeWindows/2, 1, 1.0f);
+
+            HeartBeatFrequency = -1;
         }
         
 
@@ -263,6 +265,8 @@ namespace HeartLens
         int FramePointer = 0;
 
         bool isDataReady = false;
+        double HeartBeatFrequency;
+
 
 
         double GetMean(double[] val)
@@ -328,17 +332,17 @@ namespace HeartLens
                 float ALPHA = dt / (dt + RC);
                 testFilter.Alpha = ALPHA;
 
-                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(norm_colors[0], sampleRate: 30);
+                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(norm_colorsT[0], sampleRate: 30);
                 Accord.Audio.Signal target_out = testFilter.Apply(target);
-                target_out.CopyTo(norm_colors[0]);
+                target_out.CopyTo(norm_colorsT[0]);
 
-                target = Accord.Audio.Signal.FromArray(norm_colors[1], sampleRate: 30);
+                target = Accord.Audio.Signal.FromArray(norm_colorsT[1], sampleRate: 30);
                 target_out = testFilter.Apply(target);
-                target_out.CopyTo(norm_colors[1]);
+                target_out.CopyTo(norm_colorsT[1]);
 
-                target = Accord.Audio.Signal.FromArray(norm_colors[2], sampleRate: 30);
+                target = Accord.Audio.Signal.FromArray(norm_colorsT[2], sampleRate: 30);
                 target_out = testFilter.Apply(target);
-                target_out.CopyTo(norm_colors[2]);
+                target_out.CopyTo(norm_colorsT[2]);
                 */
                 //byte[] test = target_out.RawData;
 
@@ -412,18 +416,17 @@ namespace HeartLens
 
                 int MaxRedIndex;
                 double MaxRedValue;
-                GetMax(out MaxRedIndex, out MaxRedValue, freq, magR, 0.45, 2);
+                GetMax(out MaxRedIndex, out MaxRedValue, freq, magR, 0.45, 3);
 
                 int MaxGreenIndex;
                 double MaxGreenValue;
-                GetMax(out MaxGreenIndex, out MaxGreenValue, freq, magG, 0.45, 2);
+                GetMax(out MaxGreenIndex, out MaxGreenValue, freq, magG, 0.45, 3);
 
                 int MaxBlueIndex;
                 double MaxBlueValue;
-                GetMax(out MaxBlueIndex, out MaxBlueValue, freq, magB, 0.45, 2);
+                GetMax(out MaxBlueIndex, out MaxBlueValue, freq, magB, 0.45, 3);
 
 
-                double HeartBeatFrequency = -1;
                 //Get the max power
                 if ((MaxRedValue > MaxGreenValue) && (MaxRedValue > MaxBlueValue))
                 {
@@ -443,10 +446,11 @@ namespace HeartLens
                     HeartBeatFrequency = freq[MaxBlueIndex];
                 }
                 ///////////////////////////////////
+                HeartBeatFrequency = HeartBeatFrequency * 60;
                 isDataReady = false;
                 return HeartBeatFrequency;
             }
-            return -1;
+            return HeartBeatFrequency;
         }
 
         private void GetMax(out int maxFreqIndex, out double maxColorValue, double[] freq, double[] magColor, double minFreq, int maxFreq)
