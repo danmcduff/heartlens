@@ -115,7 +115,16 @@ namespace HeartLens
                 LastRectangle = faces[0];
 
             //Use the last rectangle for ever if not updated
-            Mat image = new Mat(frame, LastRectangle);
+            //Rectangle thinRectangle;
+            int size = LastRectangle.Width/2;
+            int halfSize = size / 2;
+            Rectangle thinRectangle = new Rectangle(
+                LastRectangle.X + halfSize,
+                LastRectangle.Y,
+                LastRectangle.Width - size,
+                LastRectangle.Height);
+
+            Mat image = new Mat(frame, thinRectangle);
 
             pictureBoxObservedImage.Image = image;
     
@@ -138,6 +147,17 @@ namespace HeartLens
                     this.chart1.Series[0].Points.Add(red_norm[i]);
                     this.chart1.Series[1].Points.Add(green_norm[i]);
                     this.chart1.Series[2].Points.Add(blue_norm[i]);
+                }
+
+                this.chart2.Series[0].Points.Clear();
+                this.chart2.Series[1].Points.Clear();
+                this.chart2.Series[2].Points.Clear();
+
+                for (int i = 0; i < red_norm_FFT.Length; i++)
+                {
+                    this.chart2.Series[0].Points.Add(red_norm_FFT[i]);
+                    this.chart2.Series[1].Points.Add(green_norm_FFT[i]);
+                    this.chart2.Series[2].Points.Add(blue_norm_FFT[i]);
                 }
             });
 
@@ -179,7 +199,7 @@ namespace HeartLens
             }
 
             pictureBoxObservedImage = new Emgu.CV.UI.ImageBox();
-            pictureBoxObservedImage.Size = new Size(800, 600);
+            pictureBoxObservedImage.Size = new Size(1280, 900);
             pictureBoxObservedImage.Location = new System.Drawing.Point(10, 50);
             pictureBoxObservedImage.BackColor = Color.Gray;
             pictureBoxObservedImage.Dock = DockStyle.Fill;
@@ -200,10 +220,12 @@ namespace HeartLens
             blue = Matrix.Vector(timeWindows, 1, 1.0f);
 
             red_norm = Matrix.Vector(timeWindows, 1, 1.0f);
-            
             green_norm = Matrix.Vector(timeWindows, 1, 1.0f);
-
             blue_norm = Matrix.Vector(timeWindows, 1, 1.0f);
+
+            red_norm_FFT = Matrix.Vector(timeWindows, 1, 1.0f);
+            green_norm_FFT = Matrix.Vector(timeWindows, 1, 1.0f);
+            blue_norm_FFT = Matrix.Vector(timeWindows, 1, 1.0f);
         }
         
 
@@ -214,6 +236,10 @@ namespace HeartLens
         double[] red_norm;
         double[] green_norm;
         double[] blue_norm;
+
+        double[] red_norm_FFT;
+        double[] green_norm_FFT;
+        double[] blue_norm_FFT;
 
         int FramePointer = 0;
 
@@ -253,7 +279,7 @@ namespace HeartLens
         {
 
            // ComputeAndStorAverageRGB(image);
-            ComputeAndStorAverageRGB_Safe(image);
+            ComputeAndStorAverageRGB(image);
 
             if (isDataReady)
             {
@@ -312,6 +338,13 @@ namespace HeartLens
 
                 ///////////////////////////////////
                 // ADD A BANDPASS FILTERING STEP:
+                var testFilter = new Accord.Audio.Filters.HighPassFilter(0.1f);
+                float RC = 1 / (2 * (float)(3.142) * (float)(0.7));
+                float dt = 1 / (float)(30);
+                float ALPHA = dt / (dt + RC);
+                testFilter.Alpha = ALPHA;
+                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(colors[0], sampleRate: 30);
+                Accord.Audio.Signal target_out = testFilter.Apply(target);
 
                 ///////////////////////////////////
 
@@ -322,9 +355,9 @@ namespace HeartLens
                 double[] imagG = new double[length];
                 double[] imagB = new double[length];
 
-                red_norm = result[0];
-                green_norm = result[1];
-                blue_norm = result[2];
+                red_norm = colors[0];
+                green_norm = colors[1];
+                blue_norm = colors[2];
 
                 Accord.Math.Transforms.FourierTransform2.FFT(result[0], imagR, FourierTransform.Direction.Forward);
                 Accord.Math.Transforms.FourierTransform2.FFT(result[1], imagG, FourierTransform.Direction.Forward);
@@ -334,6 +367,10 @@ namespace HeartLens
                 double[] magR = GetMag(result[0], imagR);
                 double[] magG = GetMag(result[1], imagG);
                 double[] magB = GetMag(result[2], imagB);
+
+                red_norm_FFT = magR;
+                green_norm_FFT = magG;
+                blue_norm_FFT = magB;
                 ///////////////////////////////////
 
 
@@ -378,7 +415,7 @@ namespace HeartLens
                     HeartBeatFrequency = freq[MaxBlueIndex];
                 }
                 ///////////////////////////////////
-
+                isDataReady = false;
                 return HeartBeatFrequency;
             }
             return -1;
@@ -405,52 +442,44 @@ namespace HeartLens
             maxFreqIndex = maxIndex;
             maxColorValue = max;
         }
-        
-        
 
 
-        /// <summary>
-        /// Unsafe mode
-        /// </summary>
-        /// <param name="image"></param>
-        private void ComputeAndStorAverageRGB(Bitmap bmp)
+
+
+       /// <summary>
+       /// Unsafe mode
+       /// </summary>
+       /// <param name="image"></param>   
+        private void ComputeAndStorAverageRGB(Bitmap processedBitmap)
         {
-            int nbrPixels = bmp.Width * bmp.Height;
-            int w = bmp.Width;
-            int h = bmp.Height;
-
             int r = 0;
             int g = 0;
             int b = 0;
 
-            BitmapData bmd = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height),
-                                  System.Drawing.Imaging.ImageLockMode.ReadWrite,
-                                  bmp.PixelFormat);
-
-            int PixelSize = 4;
+            int nbrPixels = processedBitmap.Width * processedBitmap.Height;
 
             unsafe
             {
-                for (int y = 0; y < bmd.Height; y++)
+                BitmapData bitmapData = processedBitmap.LockBits(new Rectangle(0, 0, processedBitmap.Width, processedBitmap.Height), ImageLockMode.ReadWrite, processedBitmap.PixelFormat);
+
+                int bytesPerPixel = System.Drawing.Bitmap.GetPixelFormatSize(processedBitmap.PixelFormat) / 8;
+                int heightInPixels = bitmapData.Height;
+                int widthInBytes = bitmapData.Width * bytesPerPixel;
+
+                byte* ptrFirstPixel = (byte*)bitmapData.Scan0;
+
+                for (int y = 0; y < heightInPixels; y++)
                 {
-                    byte* row = (byte*)bmd.Scan0 + (y * bmd.Stride);
-
-                    for (int x = 0; x < bmd.Width; x++)
+                    byte* currentLine = ptrFirstPixel + (y * bitmapData.Stride);
+                    for (int x = 0; x < widthInBytes; x = x + bytesPerPixel)
                     {
-                        //row[x * PixelSize] = 0;   //Blue  0-255
-                        //row[x * PixelSize + 1] = 255; //Green 0-255
-                        //row[x * PixelSize + 2] = 0;   //Red   0-255
-                        //row[x * PixelSize + 3] = 50;  //Alpha 0-255
-
-                        r += row[x * PixelSize + 2];
-                        g += row[x * PixelSize + 1];
-                        b += row[x * PixelSize];
+                        r += currentLine[x + 2];  //red
+                        g += currentLine[x + 1];  //green
+                        b += currentLine[x];   // blue
                     }
                 }
+                processedBitmap.UnlockBits(bitmapData);
             }
-
-            bmp.UnlockBits(bmd);
-
 
             double arvR = (double)r / (double)nbrPixels;
             double arvG = (double)g / (double)nbrPixels;
@@ -461,6 +490,7 @@ namespace HeartLens
             blue[FramePointer] = arvB;
 
 
+            //manage the current pointer position
             FramePointer++;
             if (FramePointer >= timeWindows)
             {
@@ -470,7 +500,9 @@ namespace HeartLens
             }
         }
 
-        
+
+
+
 
         private void ComputeAndStorAverageRGB_Safe(Bitmap image)
         {
