@@ -294,8 +294,12 @@ namespace HeartLens
                     blue
                 };
 
+                double[][] norm_colorsT;
                 double[][] norm_colors;
-                norm_colors = Accord.Statistics.Tools.ZScores(colors);
+                double[][] colorsT = colors.Transpose();
+                norm_colorsT = Accord.Statistics.Tools.ZScores(colorsT);
+                norm_colors = norm_colorsT.Transpose();
+
                 ///////////////////////////////////
 
                 /*
@@ -370,9 +374,9 @@ namespace HeartLens
                 double[] imagG = new double[length];
                 double[] imagB = new double[length];
 
-                red_norm = colors[0];
-                green_norm = colors[1];
-                blue_norm = colors[2];
+                red_norm = norm_colors[0];
+                green_norm = norm_colors[1];
+                blue_norm = norm_colors[2];
 
                 Accord.Math.Transforms.FourierTransform2.FFT(result[0], imagR, FourierTransform.Direction.Forward);
                 Accord.Math.Transforms.FourierTransform2.FFT(result[1], imagG, FourierTransform.Direction.Forward);
