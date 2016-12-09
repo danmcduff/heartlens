@@ -317,35 +317,51 @@ namespace HeartLens
                     blue
                 };
 
+
+                ///////////////////////////////////
+                // ADD A HIGH PASS FILTERING STEP:
+                
+                var testFilter = new Accord.Audio.Filters.HighPassFilter(0.1f);
+                float RC = 1 / (2 * (float)(3.142) * (float)(0.1));
+                float dt = 1 / (float)(30);
+                float ALPHA = dt / (dt + RC);
+                testFilter.Alpha = ALPHA;
+
+                var floatMtx = new float[colors.Length][];
+                for (int i = 0; i < colors.Length; i++)
+                {
+                    floatMtx[i] = new float[colors[i].Length];
+                    for (int j = 0; j < colors[i].Length; j++)
+                        floatMtx[i][j] = (float)colors[i][j];
+                }
+
+                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(floatMtx[0], 1, Accord.Audio.SampleFormat.Format32BitIeeeFloat);
+                Accord.Audio.Signal target_out = testFilter.Apply(target);
+                target_out.CopyTo(floatMtx[0]);
+
+                target = Accord.Audio.Signal.FromArray(floatMtx[1], 1, Accord.Audio.SampleFormat.Format32BitIeeeFloat);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(floatMtx[1]);
+
+                target = Accord.Audio.Signal.FromArray(floatMtx[2], 1, Accord.Audio.SampleFormat.Format32BitIeeeFloat);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(floatMtx[2]);
+
+
+                for (int i = 0; i < floatMtx.Length; i++)
+                {
+                    for (int j = 0; j < floatMtx[i].Length; j++)
+                        colors[i][j] = (double)floatMtx[i][j];
+                }
+                ///////////////////////////////////
+
+                ///////////////////////////////////
+                // Z-SCORE:
                 double[][] norm_colorsT;
                 double[][] norm_colors;
                 double[][] colorsT = colors.Transpose();
                 norm_colorsT = Accord.Statistics.Tools.ZScores(colorsT);
                 norm_colors = norm_colorsT.Transpose();
-
-                ///////////////////////////////////
-                // ADD A HIGH PASS FILTERING STEP:
-                /*
-                var testFilter = new Accord.Audio.Filters.HighPassFilter(0.1f);
-                float RC = 1 / (2 * (float)(3.142) * (float)(0.7));
-                float dt = 1 / (float)(30);
-                float ALPHA = dt / (dt + RC);
-                testFilter.Alpha = ALPHA;
-
-                Accord.Audio.Signal target = Accord.Audio.Signal.FromArray(norm_colorsT[0], sampleRate: 30);
-                Accord.Audio.Signal target_out = testFilter.Apply(target);
-                target_out.CopyTo(norm_colorsT[0]);
-
-                target = Accord.Audio.Signal.FromArray(norm_colorsT[1], sampleRate: 30);
-                target_out = testFilter.Apply(target);
-                target_out.CopyTo(norm_colorsT[1]);
-
-                target = Accord.Audio.Signal.FromArray(norm_colorsT[2], sampleRate: 30);
-                target_out = testFilter.Apply(target);
-                target_out.CopyTo(norm_colorsT[2]);
-                */
-                //byte[] test = target_out.RawData;
-
                 ///////////////////////////////////
 
                 ///////////////////////////////////
@@ -367,9 +383,42 @@ namespace HeartLens
                 ///////////////////////////////////
 
                 ///////////////////////////////////
-                // ADD A BANDPASS FILTERING STEP:
+                // ADD A Low PASS FILTERING STEP:
+                
+                var LPFilter = new Accord.Audio.Filters.LowPassFilter(0.1f);
+                RC = 1 / (2 * (float)(3.142) * (float)(0.1));
+                dt = 1 / (float)(30);
+                ALPHA = dt / (dt + RC);
+                testFilter.Alpha = ALPHA;
 
 
+                var LPMtx = new float[result.Length][];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    LPMtx[i] = new float[result[i].Length];
+                    for (int j = 0; j < result[i].Length; j++)
+                        LPMtx[i][j] = (float)result[i][j];
+                }
+
+                target = Accord.Audio.Signal.FromArray(LPMtx[0], 30, Accord.Audio.SampleFormat.Format32BitIeeeFloat);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(LPMtx[0]);
+
+                target = Accord.Audio.Signal.FromArray(LPMtx[1], 30, Accord.Audio.SampleFormat.Format32BitIeeeFloat);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(LPMtx[1]);
+
+                target = Accord.Audio.Signal.FromArray(LPMtx[2], 30, Accord.Audio.SampleFormat.Format32BitIeeeFloat);
+                target_out = testFilter.Apply(target);
+                target_out.CopyTo(LPMtx[2]);
+
+                /*
+                for (int i = 0; i < LPMtx.Length; i++)
+                {
+                    for (int j = 0; j < LPMtx[i].Length; j++)
+                        result[i][j] = (double)LPMtx[i][j];
+                }
+                */
                 ///////////////////////////////////
 
 
